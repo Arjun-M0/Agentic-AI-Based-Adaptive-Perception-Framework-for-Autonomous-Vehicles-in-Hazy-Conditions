@@ -1,0 +1,10 @@
+project:
+  name: 'Agentic Adaptive Perception Framework'
+  version: '0.1.0'
+
+pipeline:
+  strategies: ['Bypass', 'DEA-Net', 'DehazeFormer']
+  detection_model: 'YOLOv11'
+
+evaluation:
+  metrics: ['mAP', 'Precision', 'Recall', 'FPS', 'Latency']

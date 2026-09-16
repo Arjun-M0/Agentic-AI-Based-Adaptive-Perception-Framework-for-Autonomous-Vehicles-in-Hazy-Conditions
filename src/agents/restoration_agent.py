@@ -1,15 +1,38 @@
+import time
 from src.agents.base_agent import BaseAgent
+from src.models.deanet.wrapper import DEANetModel
 
 
 class ImageRestorationAgent(BaseAgent):
+    def __init__(self):
+        self.deanet = DEANetModel(
+            "weights/deanet/OTS/PSNR3659_SSIM9897.pth"
+        )
+
+        self.deanet.load_model()
+
     def restore(self, image, strategy: str):
         """
-        Executes the given restoration strategy on the input image.
+        Executes the selected restoration strategy on the input image.
         """
-
         strategy = strategy.lower()
 
-        if strategy == "bypass":
-            return image
+        start_time = time.perf_counter()
 
-        raise ValueError(f"Unknown restoration strategy: {strategy}")
+        if strategy == "bypass":
+            restored_image = image
+
+        elif strategy == "deanet":
+            restored_image = self.deanet.infer(image)
+
+        else:
+            raise ValueError(
+            f"Unknown restoration strategy: {strategy}"
+        )
+
+        end_time = time.perf_counter()
+
+        latency_seconds = end_time - start_time
+        latency_ms = latency_seconds * 1000
+
+        return restored_image, latency_ms

@@ -1,0 +1,50 @@
+[
+  {
+    "_comment": "These are synthetic test fixtures and are not experimental results.",
+    "experience_id": "test_exp_1",
+    "timestamp": "2023-01-01T00:00:00Z",
+    "environment": {
+      "haze_score": 0.2,
+      "visibility_score": 0.8
+    },
+    "hardware": {
+      "gpu_available": false
+    },
+    "strategy": "Bypass",
+    "outcome": {
+      "success": true
+    }
+  },
+  {
+    "_comment": "These are synthetic test fixtures and are not experimental results.",
+    "experience_id": "test_exp_2",
+    "timestamp": "2023-01-02T00:00:00Z",
+    "environment": {
+      "haze_score": 0.5,
+      "visibility_score": 0.5
+    },
+    "hardware": {
+      "gpu_available": true
+    },
+    "strategy": "DEA-Net",
+    "outcome": {
+      "success": true
+    }
+  },
+  {
+    "_comment": "These are synthetic test fixtures and are not experimental results.",
+    "experience_id": "test_exp_3",
+    "timestamp": "2023-01-03T00:00:00Z",
+    "environment": {
+      "haze_score": 0.9,
+      "visibility_score": 0.1
+    },
+    "hardware": {
+      "gpu_available": true
+    },
+    "strategy": "DehazeFormer",
+    "outcome": {
+      "success": true
+    }
+  }
+]

@@ -8,3 +8,16 @@ pipeline:
 
 evaluation:
   metrics: ['mAP', 'Precision', 'Recall', 'FPS', 'Latency']
+
+decision:
+  strategies: ['Bypass', 'DEA-Net', 'DehazeFormer']
+  weights:
+    environment: 0.4
+    resource: 0.3
+    historical: 0.3
+    performance: 0.0 # Will be used when metrics are available
+  retrieval:
+    top_k: 5
+  requirements:
+    target_fps: 30.0
+    max_latency_ms: 100.0

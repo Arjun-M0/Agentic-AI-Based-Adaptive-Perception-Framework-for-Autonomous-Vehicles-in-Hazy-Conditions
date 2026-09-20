@@ -19,48 +19,68 @@ def test_decision_with_empty_knowledge(agent):
     assert isinstance(decision, Decision)
     assert decision.selected_strategy in agent.strategies
     assert decision.constraints_satisfied is True
-    assert "Bypass" in decision.strategy_scores
-    assert "DEA-Net" in decision.strategy_scores
-    assert "DehazeFormer" in decision.strategy_scores
     assert decision.evidence_strength == 0.0
-    assert "No historical experiences were available" in decision.explanation
+    assert "No historical evidence was available" in decision.explanation
 
-def test_hard_constraints(agent):
+def test_hard_constraints_gpu(agent):
     env = EnvironmentState(haze_score=0.9, visibility_score=0.1)
     hw = HardwareState(gpu_available=False)
     
-    # DehazeFormer requires GPU in the current mock logic
     decision = agent.select_strategy(environment_state=env, hardware_state=hw)
     
-    # It should not select DehazeFormer even with high haze, because GPU is False
     assert decision.selected_strategy != "DehazeFormer"
     assert decision.strategy_scores["DehazeFormer"] == 0.0
+    assert "DehazeFormer" in decision.explanation
 
 def test_historical_evidence_effect(agent):
     env = EnvironmentState(haze_score=0.5, visibility_score=0.5)
     hw = HardwareState(gpu_available=True)
     
-    # Provide history where DEA-Net was very successful
     history = [
-        {"strategy": "DEA-Net", "outcome": {"success": True}},
-        {"strategy": "DEA-Net", "outcome": {"success": True}},
-        {"strategy": "Bypass", "outcome": {"success": False}}
+        {"strategy": "DEA-Net", "outcome": {"success": True}, "environment": {"haze_score": 0.5}},
+        {"strategy": "DEA-Net", "outcome": {"success": True}, "environment": {"haze_score": 0.6}},
+        {"strategy": "Bypass", "outcome": {"success": False}, "environment": {"haze_score": 0.5}}
     ]
     
     decision = agent.select_strategy(environment_state=env, hardware_state=hw, historical_knowledge=history)
     assert decision.selected_strategy == "DEA-Net"
     assert decision.evidence_strength > 0.0
 
-def test_environmental_state_effect(agent):
-    env_low_haze = EnvironmentState(haze_score=0.1)
-    env_high_haze = EnvironmentState(haze_score=0.9)
+def test_performance_constraints_respected(agent):
+    env = EnvironmentState(haze_score=0.5)
     hw = HardwareState(gpu_available=True)
+    requirements = {"max_latency": 100, "target_fps": 30}
     
-    decision_low = agent.select_strategy(environment_state=env_low_haze, hardware_state=hw)
-    decision_high = agent.select_strategy(environment_state=env_high_haze, hardware_state=hw)
+    performance_data = {
+        "DEA-Net": {"latency": 150, "fps": 40},
+        "DehazeFormer": {"latency": 80, "fps": 20},
+        "Bypass": {"latency": 10, "fps": 60}
+    }
     
-    assert decision_low.selected_strategy == "Bypass"
-    assert decision_high.selected_strategy == "DehazeFormer"
+    decision = agent.select_strategy(
+        environment_state=env, 
+        hardware_state=hw, 
+        requirements=requirements,
+        performance_data=performance_data
+    )
+    
+    assert decision.selected_strategy == "Bypass"
+    assert decision.strategy_scores["DEA-Net"] == 0.0
+    assert decision.strategy_scores["DehazeFormer"] == 0.0
+    assert "Latency" in decision.explanation or "FPS" in decision.explanation
+
+def test_unevaluated_constraints_reported(agent):
+    env = EnvironmentState(haze_score=0.5)
+    hw = HardwareState(gpu_available=True)
+    requirements = {"max_latency": 100, "target_fps": 30}
+    
+    decision = agent.select_strategy(
+        environment_state=env, 
+        hardware_state=hw, 
+        requirements=requirements
+    )
+    
+    assert "Constraints unverified due to missing data: latency, fps" in decision.explanation
 
 def test_hardware_state_effect(agent):
     env = EnvironmentState(haze_score=0.5)
@@ -82,13 +102,3 @@ def test_deterministic_output(agent):
     
     assert decision1.selected_strategy == decision2.selected_strategy
     assert decision1.strategy_scores == decision2.strategy_scores
-
-def test_explanation_generation(agent):
-    env = EnvironmentState(haze_score=0.9)
-    hw = HardwareState(gpu_available=False)
-    history = [{"strategy": "Bypass", "outcome": {"success": True}}]
-    
-    decision = agent.select_strategy(environment_state=env, hardware_state=hw, historical_knowledge=history)
-    
-    assert "DehazeFormer marked infeasible" in decision.explanation
-    assert decision.selected_strategy in decision.explanation

@@ -12,10 +12,10 @@ evaluation:
 decision:
   strategies: ['Bypass', 'DEA-Net', 'DehazeFormer']
   weights:
+    # Initial project parameters; they are not experimentally optimized.
     environment: 0.4
     resource: 0.3
     historical: 0.3
-    performance: 0.0 # Will be used when metrics are available
   retrieval:
     top_k: 5
   requirements:

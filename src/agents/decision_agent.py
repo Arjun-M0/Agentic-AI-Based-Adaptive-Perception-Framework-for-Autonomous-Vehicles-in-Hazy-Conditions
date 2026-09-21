@@ -41,22 +41,18 @@ class AdaptiveDecisionAgent(BaseAgent):
     def _evaluate_feasibility(self, strategy: str, hardware_state: Optional[HardwareState], requirements: Dict[str, Any], performance_data: Optional[Dict[str, Dict[str, float]]] = None) -> Tuple[bool, str, List[str], List[str]]:
         evaluated = []
         unevaluated = []
-        
-        if strategy == "DehazeFormer":
-            evaluated.append("hardware")
-            if hardware_state and hardware_state.gpu_available is False:
-                return False, "Requires GPU, but GPU is unavailable", evaluated, unevaluated
-        else:
-            evaluated.append("hardware")
-            
-        if "max_latency" in requirements:
-            if performance_data and strategy in performance_data and "latency" in performance_data[strategy]:
+
+        # No strategy-specific hardware requirements have been measured yet.
+        unevaluated.append("hardware_requirements")
+
+        if "max_latency_ms" in requirements:
+            if performance_data and strategy in performance_data and "latency_ms" in performance_data[strategy]:
                 evaluated.append("latency")
-                if performance_data[strategy]["latency"] > requirements["max_latency"]:
-                    return False, f"Latency {performance_data[strategy]['latency']} > max {requirements['max_latency']}", evaluated, unevaluated
+                if performance_data[strategy]["latency_ms"] > requirements["max_latency_ms"]:
+                    return False, f"Latency {performance_data[strategy]['latency_ms']} > max {requirements['max_latency_ms']}", evaluated, unevaluated
             else:
                 unevaluated.append("latency")
-                
+
         if "target_fps" in requirements:
             if performance_data and strategy in performance_data and "fps" in performance_data[strategy]:
                 evaluated.append("fps")
@@ -65,45 +61,107 @@ class AdaptiveDecisionAgent(BaseAgent):
             else:
                 unevaluated.append("fps")
                 
-        return True, "Feasible", evaluated, unevaluated
+        reason = "Verified constraints satisfied" if not unevaluated else "Verified constraints satisfied; some criteria unevaluated"
+        return True, reason, evaluated, unevaluated
 
     def _score_environment(self, strategy: str, environment_state: Optional[EnvironmentState]) -> float:
+        if environment_state is None:
+            return 0.5
+
+        values = {
+            "haze": self._bounded(environment_state.haze_score),
+            "visibility": self._bounded(environment_state.visibility_score),
+            "illumination": self._bounded(environment_state.illumination_score),
+            "contrast": self._bounded(environment_state.contrast_score),
+        }
+        if not any(value is not None for value in values.values()):
+            return 0.5
+
+        quality_values = [
+            value for value in (
+                1.0 - values["haze"] if values["haze"] is not None else None,
+                values["visibility"],
+                values["contrast"],
+            ) if value is not None
+        ]
+        if values["illumination"] is not None:
+            # Both very dark and saturated-bright frames are less useful for perception.
+            quality_values.append(1.0 - abs(values["illumination"] - 0.5) * 2.0)
+
+        environment_quality = sum(quality_values) / len(quality_values)
+        if strategy == "Bypass":
+            return self._bounded(environment_quality)
+        if strategy in {"DEA-Net", "DehazeFormer"}:
+            # This describes degraded-environment suitability, not measured model quality.
+            return self._bounded(1.0 - environment_quality)
         return 0.5
 
     def _score_resource(self, strategy: str, hardware_state: Optional[HardwareState]) -> float:
         if not hardware_state:
             return 0.5
-            
-        has_gpu = hardware_state.gpu_available
+
         if strategy == "Bypass":
             return 1.0
-        elif strategy == "DEA-Net":
-            return 0.8 if has_gpu else 0.4
-        elif strategy == "DehazeFormer":
-            return 0.6 if has_gpu else 0.1
+
+        signals = [1.0 if hardware_state.gpu_available else 0.0]
+        if hardware_state.gpu_available and hardware_state.gpu_utilization is not None:
+            signals.append(1.0 - self._bounded(hardware_state.gpu_utilization / 100.0))
+        if hardware_state.gpu_available and hardware_state.gpu_memory_available is not None:
+            signals.append(self._bounded(hardware_state.gpu_memory_available / 4096.0))
+        for utilization in (hardware_state.cpu_utilization, hardware_state.ram_utilization):
+            if utilization is not None:
+                signals.append(1.0 - self._bounded(utilization / 100.0))
+
+        availability = sum(signals) / len(signals)
+        if strategy == "DehazeFormer":
+            return self._bounded(availability * 0.9)
+        if strategy == "DEA-Net":
+            return self._bounded(availability * 0.95)
         return 0.5
 
+    @staticmethod
+    def _bounded(value: Optional[float]) -> Optional[float]:
+        if value is None:
+            return None
+        return max(0.0, min(1.0, float(value)))
+
     def _score_historical(self, strategy: str, historical_knowledge: List[Dict[str, Any]], current_env: Optional[EnvironmentState] = None) -> float:
-        if not historical_knowledge:
+        usable_history = [exp for exp in historical_knowledge if not exp.get("_comment", "").lower().startswith("these are synthetic")]
+        if not usable_history:
             return 0.5
             
-        strategy_exps = [exp for exp in historical_knowledge if exp.get("strategy") == strategy]
+        strategy_exps = [exp for exp in usable_history if exp.get("strategy") == strategy]
         if not strategy_exps:
             return 0.5
             
         relevant_exps = strategy_exps
-        if current_env and current_env.haze_score is not None:
+        if current_env:
             similar_exps = []
+            current_values = {
+                "haze_score": current_env.haze_score,
+                "visibility_score": current_env.visibility_score,
+                "illumination_score": current_env.illumination_score,
+                "contrast_score": current_env.contrast_score,
+            }
             for exp in strategy_exps:
                 env_data = exp.get("environment", {})
-                if isinstance(env_data, dict) and "haze_score" in env_data:
-                    if abs(env_data["haze_score"] - current_env.haze_score) <= 0.2:
-                        similar_exps.append(exp)
+                if not isinstance(env_data, dict):
+                    continue
+                compatible = [
+                    abs(env_data[field] - value) <= 0.2
+                    for field, value in current_values.items()
+                    if value is not None and isinstance(env_data.get(field), (int, float))
+                ]
+                if compatible and all(compatible):
+                    similar_exps.append(exp)
             if similar_exps:
                 relevant_exps = similar_exps
                 
-        success_count = sum(1 for exp in relevant_exps if exp.get("outcome", {}).get("success", False))
-        return success_count / len(relevant_exps)
+        outcomes = [exp.get("outcome", {}).get("success") for exp in relevant_exps]
+        measured_outcomes = [outcome for outcome in outcomes if isinstance(outcome, bool)]
+        if not measured_outcomes:
+            return 0.5
+        return sum(measured_outcomes) / len(measured_outcomes)
 
     def select_strategy(self, 
                         environment_state: Optional[EnvironmentState] = None, 
@@ -167,18 +225,20 @@ class AdaptiveDecisionAgent(BaseAgent):
                 reasons.append(f"Infeasible strategies: {', '.join([f'{s} ({r})' for s, r in infeasible_strategies.items()])}")
                 
             if info["unevaluated"]:
-                reasons.append(f"Constraints unverified due to missing data: {', '.join(info['unevaluated'])}")
+                reasons.append(f"Criteria unevaluated due to missing data: {', '.join(info['unevaluated'])}")
             if info["evaluated"]:
                 reasons.append(f"Satisfied evaluated constraints: {', '.join(info['evaluated'])}")
                 
-            if not historical_knowledge:
-                reasons.append("No historical evidence was available (cold-start)")
+            usable_history = [exp for exp in historical_knowledge if not exp.get("_comment", "").lower().startswith("these are synthetic")]
+            if not usable_history:
+                reasons.append("No usable historical evidence was available (cold-start)")
             else:
                 reasons.append("Historical evidence applied")
                 
-            explanation = f"Selected {selected_strategy}. " + "; ".join(reasons) + "."
+            explanation = f"Selected {selected_strategy} because it received the highest combined score from environment suitability, hardware/resource suitability, and historical evidence. " + "; ".join(reasons) + "."
 
-        evidence_strength = min(1.0, len(historical_knowledge) / 10.0)
+        usable_history = [exp for exp in historical_knowledge if not exp.get("_comment", "").lower().startswith("these are synthetic")]
+        evidence_strength = min(1.0, len(usable_history) / 10.0)
 
         decision = Decision(
             selected_strategy=selected_strategy,

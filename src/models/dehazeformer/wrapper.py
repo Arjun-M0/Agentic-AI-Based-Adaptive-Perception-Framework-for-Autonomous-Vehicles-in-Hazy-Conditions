@@ -23,10 +23,12 @@ class DehazeFormerModel(BaseModel):
             self.weight_path,
             map_location="cpu"
         )
+        
+        state_dict_raw = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
 
         state_dict = {
             key.replace("module.", "", 1): value
-            for key, value in checkpoint["state_dict"].items()
+            for key, value in state_dict_raw.items()
         }
 
         self.model.load_state_dict(state_dict)

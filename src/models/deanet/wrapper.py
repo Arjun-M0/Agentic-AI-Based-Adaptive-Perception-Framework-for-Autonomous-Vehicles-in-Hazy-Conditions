@@ -35,8 +35,10 @@ class DEANetModel(BaseModel):
             self.weight_path,
             map_location="cpu"
         )
+        
+        state_dict_raw = checkpoint.get("state_dict", checkpoint) if isinstance(checkpoint, dict) else checkpoint
 
-        self.model.load_state_dict(checkpoint)
+        self.model.load_state_dict(state_dict_raw)
 
         self.model = self.model.to(self.device)
 

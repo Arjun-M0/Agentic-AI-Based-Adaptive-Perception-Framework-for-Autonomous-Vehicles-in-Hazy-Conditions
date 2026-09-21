@@ -1,5 +1,6 @@
 import time
 import torch
+import numpy as np
 from src.agents.base_agent import BaseAgent
 from src.models.deanet.wrapper import DEANetModel
 from src.models.dehazeformer.wrapper import DehazeFormerModel
@@ -33,6 +34,15 @@ class ImageRestorationAgent(BaseAgent):
         """
         Executes the selected restoration strategy on the input image.
         """
+        if not isinstance(image, np.ndarray):
+            raise TypeError("Input image must be a numpy array.")
+        if image.size == 0:
+            raise ValueError("Input image cannot be empty.")
+        if image.ndim != 3 or image.shape[2] != 3:
+            raise ValueError("Input image must be a 3-channel (H, W, 3) image.")
+        if image.dtype != np.uint8:
+            raise TypeError("Input image must have dtype uint8.")
+
         strategy = strategy.lower()
         if torch.cuda.is_available() and strategy in ("deanet", "dehazeformer"):
             torch.cuda.synchronize()

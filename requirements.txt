@@ -2,8 +2,11 @@
 numpy
 opencv-python
 PyYAML
+psutil
+torch
+torchvision
+timm
+ultralytics
+einops
 
-# Placeholder for Deep Learning dependencies
-# Note: PyTorch, torchvision versions to be determined based on DehazeFormer/DEA-Net compatibility.
-# ultralytics (for YOLOv11) will be added during integration.
 pytest

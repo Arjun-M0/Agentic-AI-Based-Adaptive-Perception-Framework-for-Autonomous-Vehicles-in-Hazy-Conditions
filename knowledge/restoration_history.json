@@ -1,1 +1,27 @@
-[]
+[
+    {
+        "environment": {
+            "haze_score": 0.6323,
+            "visibility_score": 0.7643,
+            "illumination_score": 0.7522,
+            "contrast_score": 0.2115
+        },
+        "hardware": {
+            "gpu_available": false,
+            "cpu_utilization": 4.5,
+            "ram_utilization": 83.4
+        },
+        "strategy": "Bypass",
+        "performance": {
+            "decision_latency_ms": 0.24
+        },
+        "outcome": {
+            "success": true
+        },
+        "provenance": {
+            "image_path": "data/samples/test_road.jpg"
+        },
+        "experience_id": "exp_6c16302d",
+        "timestamp": "2026-10-25T19:32:26.489092Z"
+    }
+]

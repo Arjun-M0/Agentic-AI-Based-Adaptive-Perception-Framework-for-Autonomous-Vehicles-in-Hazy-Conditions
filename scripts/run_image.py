@@ -1,3 +1,6 @@
+#python scripts\run_image.py data\samples\test_road.jpg --strategy auto
+#python scripts\run_image.py data\samples\test_road.jpg --strategy dehazeformer --output outputs\images\dehazeformer_road.jpg --detection-output outputs\images\dehazeformer_detections.jpg
+#python scripts\run_image.py data\samples\test_road.jpg --strategy deanet --output outputs\images\deanet_road.jpg --detection-output outputs\images\deanet_detections.jpg
 import argparse
 import json
 import os

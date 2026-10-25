@@ -12,5 +12,33 @@ An agentic framework that dynamically determines the optimal restoration strateg
 - **Processing Layer**: Executes the selected Image Restoration strategy and performs Object Detection (YOLOv11).
 - **Evaluation & Knowledge Feedback Layer**: Evaluates perception and runtime metrics, feeding results back to update historical knowledge.
 
-## 4. Current Project Status
-Status: **Initial Backbone / Skeleton** (Placeholder interfaces implemented).
+## 4. Running an Evaluation
+
+Run the complete pipeline through `main.py`:
+
+```powershell
+python main.py "data\mid_review\images" `
+  --report outputs\reports\mid_review_batch_evaluation.xlsx `
+  --detections outputs\detections\mid_review_batch
+```
+
+The input may be one image or a directory. Directory input is discovered
+recursively and supports JPG, JPEG, PNG, BMP, and WEBP files. The Excel
+workbook contains:
+
+- `Summary`: processed/skipped counts and metric availability
+- `Per Image`: environment measurements, selected strategy, explanation, and runtime measurements
+- `Detections`: each YOLO detection and bounding box
+- `Skipped`: files that could not be decoded
+- `Strategy Summary`: aggregate latency and FPS by selected strategy
+
+The selected 30-image dataset is unannotated, so mAP, precision, and recall
+are reported as unavailable rather than fabricated. Detection count,
+confidence, restoration latency, total latency, and FPS are measured from the
+actual run. Historical retrieval is optional; an empty knowledge repository is
+reported by the decision explanation as a cold start.
+
+## 5. Current Project Status
+Status: **End-to-end evaluation pipeline integrated**. The repository's
+available model weights and YOLO detector are used directly. If a selected restoration model cannot be loaded, the run fails explicitly
+instead of substituting a mock result.

@@ -14,21 +14,18 @@ class ImageRestorationAgent(BaseAgent):
     def _get_deanet(self):
         if self.deanet is None:
             self.deanet = DEANetModel(
-            "weights/deanet/OTS/PSNR3659_SSIM9897.pth"
-        )
+                "weights/deanet/OTS/PSNR3659_SSIM9897.pth"
+            )
             self.deanet.load_model()
-
-            return self.deanet
-
+        return self.deanet
 
     def _get_dehazeformer(self):
         if self.dehazeformer is None:
             self.dehazeformer = DehazeFormerModel(
-            "weights/dehazeformer/outdoor/dehazeformer-t.pth"
-        )
+                "weights/dehazeformer/outdoor/dehazeformer-t.pth"
+            )
             self.dehazeformer.load_model()
-
-            return self.dehazeformer
+        return self.dehazeformer
 
     def restore(self, image, strategy: str):
         """
@@ -43,7 +40,7 @@ class ImageRestorationAgent(BaseAgent):
         if image.dtype != np.uint8:
             raise TypeError("Input image must have dtype uint8.")
 
-        strategy = strategy.lower()
+        strategy = strategy.lower().replace("-", "")
         if torch.cuda.is_available() and strategy in ("deanet", "dehazeformer"):
             torch.cuda.synchronize()
         start_time = time.perf_counter()

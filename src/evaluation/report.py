@@ -19,6 +19,18 @@ def write_excel_report(run: Dict, output_file: str) -> str:
         ("Input source", run["source"]),
         ("Processed images", len(run["results"])),
         ("Skipped images", len(run["skipped"])),
+        (
+            "Cold-start explorations",
+            sum(1 for result in run["results"] if result.get("cold_start_exploration")),
+        ),
+        (
+            "Knowledge-assisted results",
+            sum(
+                1
+                for result in run["results"]
+                if result.get("knowledge_assisted_latency_ms") is not None
+            ),
+        ),
         ("mAP", "Unavailable: no ground-truth annotations"),
         ("Precision", "Unavailable: no ground-truth annotations"),
         ("Recall", "Unavailable: no ground-truth annotations"),
@@ -35,6 +47,13 @@ def write_excel_report(run: Dict, output_file: str) -> str:
             "Height",
             "Strategy",
             "Strategy Explanation",
+            "Cold-Start Exploration",
+            "Candidate Strategies Evaluated",
+            "Candidate Latencies (ms)",
+            "Cold-Start Exploration Total (ms)",
+            "Previous Exploration Total (ms)",
+            "Knowledge-Assisted Latency (ms)",
+            "Latency Reduction (%)",
             "Haze Score",
             "Visibility Score",
             "Illumination Score",
@@ -69,6 +88,13 @@ def write_excel_report(run: Dict, output_file: str) -> str:
                 result["height"],
                 decision.selected_strategy,
                 decision.explanation,
+                result.get("cold_start_exploration", False),
+                result.get("candidate_count", 1),
+                str(result.get("candidate_latencies_ms", {})),
+                result.get("cold_start_exploration_total_latency_ms"),
+                result.get("previous_exploration_latency_ms"),
+                result.get("knowledge_assisted_latency_ms"),
+                result.get("latency_reduction_percent"),
                 _state_value(environment, "haze_score"),
                 _state_value(environment, "visibility_score"),
                 _state_value(environment, "illumination_score"),
@@ -118,6 +144,57 @@ def write_excel_report(run: Dict, output_file: str) -> str:
                 sum(item["fps"] for item in evaluations) / len(evaluations),
             ]
         )
+
+    comparison = workbook.create_sheet("Knowledge Comparison")
+    comparison.append(["Metric", "Before Knowledge", "After Knowledge"])
+    result = run["results"][-1] if run["results"] else {}
+    candidate_latencies = result.get("candidate_latencies_ms", {})
+    previous_candidate_latencies = result.get("previous_candidate_latencies_ms")
+    before_total = (
+        result.get("previous_exploration_latency_ms")
+        or result.get("cold_start_exploration_total_latency_ms")
+    )
+    after_latency = result.get("knowledge_assisted_latency_ms")
+    comparison_rows = [
+        ("Input", run["source"], run["source"]),
+        (
+            "Execution mode",
+            "Cold-start exploration",
+            "Knowledge-assisted execution",
+        ),
+        (
+            "Strategies evaluated",
+            3
+            if result.get("cold_start_exploration")
+            else len(previous_candidate_latencies or {}),
+            result.get("candidate_count", 1),
+        ),
+        (
+            "Strategies executed",
+            "Bypass, DEA-Net, DehazeFormer"
+            if result.get("cold_start_exploration")
+            else ", ".join(previous_candidate_latencies or {})
+            or "Stored first-run candidates",
+            result.get("decision").selected_strategy if result.get("decision") else None,
+        ),
+        (
+            "Candidate latency measurements (ms)",
+            str(previous_candidate_latencies or candidate_latencies)
+            if (previous_candidate_latencies or candidate_latencies)
+            else "Stored in first-run report",
+            str({result.get("decision").selected_strategy: after_latency})
+            if result.get("decision") and after_latency is not None
+            else "Unavailable",
+        ),
+        ("Total processing latency (ms)", before_total, after_latency),
+        (
+            "Latency reduction (%)",
+            "Not applicable",
+            result.get("latency_reduction_percent"),
+        ),
+    ]
+    for row in comparison_rows:
+        comparison.append(row)
 
     for sheet in workbook.worksheets:
         sheet.freeze_panes = "A2"

@@ -23,6 +23,11 @@ def main(argv=None):
         help="Excel report output path.",
     )
     parser.add_argument(
+        "--knowledge",
+        default="knowledge/restoration_history.json",
+        help="Knowledge repository JSON path.",
+    )
+    parser.add_argument(
         "--detections",
         default="outputs/detections",
         help="Directory for annotated detection images.",
@@ -31,7 +36,7 @@ def main(argv=None):
 
     logger = setup_logger()
     logger.info('Initializing Agentic AI-Based Adaptive Perception Framework...')
-    pipeline = PerceptionPipeline()
+    pipeline = PerceptionPipeline(knowledge_path=args.knowledge)
     run = pipeline.run(args.source, args.detections)
     report_path = write_excel_report(run, args.report)
     logger.info(

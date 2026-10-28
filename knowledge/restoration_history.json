@@ -1,27 +1,31 @@
 [
     {
         "environment": {
-            "haze_score": 0.6323,
-            "visibility_score": 0.7643,
-            "illumination_score": 0.7522,
-            "contrast_score": 0.2115
+            "haze_score": 0.6322655410392201,
+            "visibility_score": 0.7643100262653318,
+            "illumination_score": 0.7522342755283932,
+            "contrast_score": 0.21151294335528276
         },
         "hardware": {
-            "gpu_available": false,
-            "cpu_utilization": 4.5,
-            "ram_utilization": 83.4
+            "gpu_available": true,
+            "gpu_utilization": 0.0,
+            "gpu_memory_available": 3326.0234375,
+            "cpu_utilization": 32.1,
+            "ram_utilization": 76.8
         },
         "strategy": "Bypass",
         "performance": {
-            "decision_latency_ms": 0.24
+            "restoration_latency_ms": 0.0005000001692678779,
+            "latency_ms": 0.0005000001692678779
         },
         "outcome": {
             "success": true
         },
         "provenance": {
-            "image_path": "data/samples/test_road.jpg"
+            "image_path": "data\\samples\\test_road.jpg",
+            "benchmark": true
         },
-        "experience_id": "exp_6c16302d",
-        "timestamp": "2026-10-25T19:32:26.489092Z"
+        "experience_id": "exp_d11264dc",
+        "timestamp": "2026-10-28T17:15:21.596063Z"
     }
 ]

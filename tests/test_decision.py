@@ -131,3 +131,17 @@ def test_deterministic_output(agent):
     
     assert decision1.selected_strategy == decision2.selected_strategy
     assert decision1.strategy_scores == decision2.strategy_scores
+
+def test_historical_evidence_does_not_replace_candidate_scoring(agent):
+    decision = agent.select_strategy(
+        historical_knowledge=[{
+            "strategy": "DEA-Net",
+            "environment": {"haze_score": 0.9, "visibility_score": 0.1},
+            "performance": {"latency_ms": 10.0},
+            "outcome": {"success": True},
+        }],
+        environment_state=EnvironmentState(haze_score=0.1, visibility_score=0.9),
+        hardware_state=HardwareState(gpu_available=False),
+    )
+    assert set(decision.strategy_scores) == set(agent.strategies)
+    assert decision.evidence_strength > 0.0

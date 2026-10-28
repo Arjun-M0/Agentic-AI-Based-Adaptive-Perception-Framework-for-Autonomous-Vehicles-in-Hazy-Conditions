@@ -125,7 +125,12 @@ class AdaptiveDecisionAgent(BaseAgent):
             return None
         return max(0.0, min(1.0, float(value)))
 
-    def _score_historical(self, strategy: str, historical_knowledge: List[Dict[str, Any]], current_env: Optional[EnvironmentState] = None) -> float:
+    def _score_historical(
+        self,
+        strategy: str,
+        historical_knowledge: List[Dict[str, Any]],
+        current_env: Optional[EnvironmentState] = None,
+    ) -> float:
         usable_history = [exp for exp in historical_knowledge if not exp.get("_comment", "").lower().startswith("these are synthetic")]
         if not usable_history:
             return 0.5
@@ -135,8 +140,10 @@ class AdaptiveDecisionAgent(BaseAgent):
             return 0.5
             
         relevant_exps = strategy_exps
+        similarity = 0.5
         if current_env:
             similar_exps = []
+            similarity_scores = []
             current_values = {
                 "haze_score": current_env.haze_score,
                 "visibility_score": current_env.visibility_score,
@@ -147,21 +154,36 @@ class AdaptiveDecisionAgent(BaseAgent):
                 env_data = exp.get("environment", {})
                 if not isinstance(env_data, dict):
                     continue
-                compatible = [
-                    abs(env_data[field] - value) <= 0.2
+                distances = [
+                    abs(env_data[field] - value)
                     for field, value in current_values.items()
                     if value is not None and isinstance(env_data.get(field), (int, float))
                 ]
-                if compatible and all(compatible):
+                if distances:
+                    similarity_scores.append(
+                        max(0.0, 1.0 - sum(distances) / len(distances))
+                    )
+                if distances and all(distance <= 0.2 for distance in distances):
                     similar_exps.append(exp)
             if similar_exps:
                 relevant_exps = similar_exps
+            if similarity_scores:
+                similarity = max(similarity_scores)
                 
         outcomes = [exp.get("outcome", {}).get("success") for exp in relevant_exps]
         measured_outcomes = [outcome for outcome in outcomes if isinstance(outcome, bool)]
         if not measured_outcomes:
             return 0.5
-        return sum(measured_outcomes) / len(measured_outcomes)
+        success_score = sum(measured_outcomes) / len(measured_outcomes)
+        measured_latencies = [
+            exp.get("performance", {}).get("latency_ms")
+            for exp in relevant_exps
+            if isinstance(exp.get("performance", {}).get("latency_ms"), (int, float))
+        ]
+        latency_score = 0.5
+        if measured_latencies:
+            latency_score = max(0.0, min(1.0, 1.0 - (sum(measured_latencies) / len(measured_latencies)) / 1000.0))
+        return success_score * (0.5 + 0.5 * similarity) * 0.7 + latency_score * 0.3
 
     def select_strategy(self, 
                         environment_state: Optional[EnvironmentState] = None, 

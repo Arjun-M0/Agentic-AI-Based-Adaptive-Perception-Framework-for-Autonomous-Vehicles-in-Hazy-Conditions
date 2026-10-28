@@ -59,6 +59,23 @@ def test_retrieval(temp_repo_path):
     assert len(retrieved) > 0
     assert retrieved[0]["strategy"] == "DehazeFormer"
 
+def test_similar_experience_checks_environment_and_hardware(temp_repo_path):
+    agent = KnowledgeRepositoryAgent(file_path=temp_repo_path)
+    agent.update({
+        "environment": {"haze_score": 0.9, "visibility_score": 0.1},
+        "hardware": {"gpu_available": True},
+        "strategy": "DEA-Net",
+        "outcome": {"success": True},
+    })
+    assert agent.has_similar_experience(
+        EnvironmentState(haze_score=0.85, visibility_score=0.15),
+        HardwareState(gpu_available=True),
+    )
+    assert not agent.has_similar_experience(
+        EnvironmentState(haze_score=0.1, visibility_score=0.9),
+        HardwareState(gpu_available=False),
+    )
+
 def test_top_k(temp_repo_path):
     agent = KnowledgeRepositoryAgent(file_path=temp_repo_path, top_k=2)
     for i in range(5):

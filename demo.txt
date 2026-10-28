@@ -1,0 +1,11 @@
+python ./scripts/run_image.py ./data/samples/test_road.jpg --strategy deanet --output ./outputs/images/deanet_road.jpg --detection-output ./outputs/images/deanet_detections.jpg
+python ./scripts/run_image.py ./data/samples/test_road.jpg --strategy dehazeformer --output ./outputs/images/dehazeformer_road.jpg --detection-output ./outputs/images/dehazeformer_detections.jpg
+python ./scripts/run_image.py ./data/samples/test_road.jpg --strategy bypass --output ./outputs/images/restored_road.jpg --detection-output ./outputs/images/detections_road.jpg
+
+python ./scripts/run_image.py ./data/samples/test_road.jpg --strategy auto
+
+python ./main.py ./data/samples/test_road.jpg --knowledge ./outputs/reports/knowledge_demo/demo_history.json --report ./outputs/reports/knowledge_demo/before_knowledge.xlsx --detections ./outputs/detections/knowledge_demo/before
+
+python ./main.py ./data/samples/test_road.jpg --knowledge ./outputs/reports/knowledge_demo/demo_history.json --report ./outputs/reports/knowledge_demo/after_knowledge.xlsx --detections ./outputs/detections/knowledge_demo/after
+
+python ./scripts/benchmark_knowledge_latency.py

@@ -1,0 +1,92 @@
+[
+    {
+        "environment": {
+            "haze_score": 0.6322655410392201,
+            "visibility_score": 0.7643100262653318,
+            "illumination_score": 0.7522342755283932,
+            "contrast_score": 0.21151294335528276
+        },
+        "hardware": {
+            "gpu_available": false,
+            "gpu_utilization": null,
+            "gpu_memory_available": null,
+            "cpu_utilization": 3.1,
+            "ram_utilization": 83.0
+        },
+        "strategy": "Bypass",
+        "performance": {
+            "restoration_latency_ms": 0.004200031980872154,
+            "detection_latency_ms": 590.1021000463516,
+            "latency_ms": 590.1063000783324,
+            "fps": 1.6946099370016166,
+            "candidate_latencies_ms": {
+                "Bypass": 590.1063000783324,
+                "DEA-Net": 2023.3646002598107,
+                "DehazeFormer": 1149.8181999195367
+            },
+            "previous_candidate_latencies_ms": null,
+            "cold_start_exploration_total_latency_ms": 3763.28910025768,
+            "knowledge_assisted_latency_ms": null
+        },
+        "outcome": {
+            "success": true,
+            "detection_count": 12
+        },
+        "provenance": {
+            "image_path": "data\\samples\\test_road.jpg",
+            "cold_start_exploration": true,
+            "candidate_strategies": [
+                "Bypass",
+                "DEA-Net",
+                "DehazeFormer"
+            ]
+        },
+        "experience_id": "exp_7445a20c",
+        "timestamp": "2026-10-29T05:45:52.601990Z"
+    },
+    {
+        "environment": {
+            "haze_score": 0.6322655410392201,
+            "visibility_score": 0.7643100262653318,
+            "illumination_score": 0.7522342755283932,
+            "contrast_score": 0.21151294335528276
+        },
+        "hardware": {
+            "gpu_available": false,
+            "gpu_utilization": null,
+            "gpu_memory_available": null,
+            "cpu_utilization": 3.6,
+            "ram_utilization": 83.3
+        },
+        "strategy": "Bypass",
+        "performance": {
+            "restoration_latency_ms": 0.0028999056667089462,
+            "detection_latency_ms": 367.11440002545714,
+            "latency_ms": 367.11729993112385,
+            "fps": 2.7239250239299904,
+            "candidate_latencies_ms": {
+                "Bypass": 367.11729993112385
+            },
+            "previous_candidate_latencies_ms": {
+                "Bypass": 590.1063000783324,
+                "DEA-Net": 2023.3646002598107,
+                "DehazeFormer": 1149.8181999195367
+            },
+            "cold_start_exploration_total_latency_ms": 3763.28910025768,
+            "knowledge_assisted_latency_ms": 367.11729993112385
+        },
+        "outcome": {
+            "success": true,
+            "detection_count": 12
+        },
+        "provenance": {
+            "image_path": "data\\samples\\test_road.jpg",
+            "cold_start_exploration": false,
+            "candidate_strategies": [
+                "Bypass"
+            ]
+        },
+        "experience_id": "exp_24fb620f",
+        "timestamp": "2026-10-29T05:46:11.135898Z"
+    }
+]
